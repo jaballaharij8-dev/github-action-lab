@@ -26,3 +26,12 @@ jobs:
        with:
         name: report-failure
         path: test-reports/
+
+  deploy:
+     needs: build-and-test
+     runs-on: ubuntu-latest
+     if: success()
+     steps:
+       - uses: actions/checkout@v3
+       - name: Deploy application
+         run: bash ./deploy.sh production
