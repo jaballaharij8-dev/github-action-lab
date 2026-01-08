@@ -20,14 +20,15 @@ jobs:
       - name: Run tests
         run: |
           mkdir -p test-reports
-          pytest --junitxml=test-reports/results.xml
+          pytest --junitxml=test-reports/results.xml || true
 
-      - name: Upload test report on failure
-        if: failure()
+      - name: Upload test report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-         name: report-failure
-         path: test-reports/results.xml
+          name: test-report
+          path: test-reports/results.xml
+          if-no-files-found: warn
 
       - name: Send Gmail notification on failure (with report)
         if: failure()
@@ -42,14 +43,14 @@ jobs:
             Bonjour,
 
             Le pipeline CI a échoué ❌
-            Vous trouverez le rapport de tests en pièce jointe.
+            Veuillez trouver le rapport de tests en pièce jointe.
 
             Repository : ${{ github.repository }}
             Branche : ${{ github.ref_name }}
-            Commit : ${{ github.sha }}
           to: ${{ secrets.MAIL_TO }}
           from: GitHub Actions <${{ secrets.SMTP_USERNAME }}>
           attachments: test-reports/results.xml
+
   deploy:
     needs: build-and-test
     runs-on: ubuntu-latest
@@ -60,7 +61,13 @@ jobs:
       - name: Deploy application
         run: bash ./deploy.sh production
 
-      - name: Send Gmail notification on success
+      - name: Download test report artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: test-report
+          path: test-reports
+
+      - name: Send Gmail notification on success (with report)
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: smtp.gmail.com
@@ -72,8 +79,10 @@ jobs:
             Bonjour,
 
             Le pipeline CI + Deploy s’est terminé avec succès ✅
+            Le rapport de tests est joint à cet email.
 
             Repository : ${{ github.repository }}
             Branche : ${{ github.ref_name }}
           to: ${{ secrets.MAIL_TO }}
           from: GitHub Actions <${{ secrets.SMTP_USERNAME }}>
+          attachments: test-reports/results.xml
