@@ -48,6 +48,7 @@ jobs:
             Repository : ${{ github.repository }}
             Branche : ${{ github.ref_name }}
           to: ${{ secrets.MAIL_TO }}
+          cc: ${{ secrets.MAIL_CC }}
           from: GitHub Actions <${{ secrets.SMTP_USERNAME }}>
           attachments: test-reports/results.xml
 
@@ -84,5 +85,6 @@ jobs:
             Repository : ${{ github.repository }}
             Branche : ${{ github.ref_name }}
           to: ${{ secrets.MAIL_TO }}
+          cc: ${{ secrets.MAIL_CC }}
           from: GitHub Actions <${{ secrets.SMTP_USERNAME }}>
           attachments: test-reports/results.xml
