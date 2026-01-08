@@ -27,6 +27,24 @@ jobs:
         name: report-failure
         path: test-reports/
 
+     - name: Send Gmail notification on success
+       if: success()
+       uses: dawidd6/action-send-mail@v3
+       with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "✅ CI Success - Step1 Python"
+          body: |
+            Bonjour,
+
+            Le pipeline CI s’est terminé avec succès ✅
+
+            Repository : ${{ github.repository }}
+            Branche : ${{ github.ref_name }}
+          to: ${{ secrets.MAIL_TO }}
+          from: GitHub Actions <${{ secrets.SMTP_USERNAME }}>
   deploy:
      needs: build-and-test
      runs-on: ubuntu-latest
