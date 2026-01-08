@@ -1,55 +1,75 @@
 name: Step1 Python CI
-on: [push,pull_request]
+on: [push, pull_request]
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
-     - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-     - name: Setup Python 3.10
-       uses: actions/setup-python@v4
-       with:
-        python-version: '3.10'
+      - name: Setup Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
 
-     - name: Install dependencies
-       run: |
+      - name: Install dependencies
+        run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-     - name: Run tests
-       run: pytest --junitxml=test-reports/results.xml
+      - name: Run tests
+        run: pytest --junitxml=test-reports/results.xml
 
-     - name: Upload test report on failure
-       if: failure()
-       uses: actions/upload-artifact@v4
-       with:
-        name: report-failure
-        path: test-reports/
+      - name: Upload test report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-failure
+          path: test-reports/
 
-     - name: Send Gmail notification on success
-       if: success()
-       uses: dawidd6/action-send-mail@v3
-       with:
+      - name: Send Gmail notification on failure
+        if: failure()
+        uses: dawidd6/action-send-mail@v3
+        with:
           server_address: smtp.gmail.com
           server_port: 587
           username: ${{ secrets.SMTP_USERNAME }}
           password: ${{ secrets.SMTP_PASSWORD }}
-          subject: "✅ CI Success - Step1 Python"
+          subject: "❌ CI Failed - Step1 Python"
           body: |
             Bonjour,
 
-            Le pipeline CI s’est terminé avec succès ✅
+            Le pipeline CI a échoué ❌
+
+            Repository : ${{ github.repository }}
+            Branche : ${{ github.ref_name }}
+            Commit : ${{ github.sha }}
+          to: ${{ secrets.MAIL_TO }}
+          from: GitHub Actions <${{ secrets.SMTP_USERNAME }}>
+  deploy:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: success()
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Deploy application
+        run: bash ./deploy.sh production
+
+      - name: Send Gmail notification on success
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "✅ CI & Deploy Success - Step1 Python"
+          body: |
+            Bonjour,
+
+            Le pipeline CI + Deploy s’est terminé avec succès ✅
 
             Repository : ${{ github.repository }}
             Branche : ${{ github.ref_name }}
           to: ${{ secrets.MAIL_TO }}
           from: GitHub Actions <${{ secrets.SMTP_USERNAME }}>
-  deploy:
-     needs: build-and-test
-     runs-on: ubuntu-latest
-     if: success()
-     steps:
-       - uses: actions/checkout@v3
-       - name: Deploy application
-         run: bash ./deploy.sh production
