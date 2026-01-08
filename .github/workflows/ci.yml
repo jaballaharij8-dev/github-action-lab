@@ -18,16 +18,18 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run tests
-        run: pytest --junitxml=test-reports/results.xml
+        run: |
+          mkdir -p test-reports
+          pytest --junitxml=test-reports/results.xml
 
       - name: Upload test report on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: report-failure
-          path: test-reports/
+         name: report-failure
+         path: test-reports/results.xml
 
-      - name: Send Gmail notification on failure
+      - name: Send Gmail notification on failure (with report)
         if: failure()
         uses: dawidd6/action-send-mail@v3
         with:
@@ -40,12 +42,14 @@ jobs:
             Bonjour,
 
             Le pipeline CI a échoué ❌
+            Vous trouverez le rapport de tests en pièce jointe.
 
             Repository : ${{ github.repository }}
             Branche : ${{ github.ref_name }}
             Commit : ${{ github.sha }}
           to: ${{ secrets.MAIL_TO }}
           from: GitHub Actions <${{ secrets.SMTP_USERNAME }}>
+          attachments: test-reports/results.xml
   deploy:
     needs: build-and-test
     runs-on: ubuntu-latest
